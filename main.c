@@ -24,6 +24,15 @@
 #define RESOURCE_BUFFER_LENGTH 1024
 #define RESPONSE_BUFFER_LENGTH 2048
 
+enum methods {
+    GET = 0,
+    POST,       //Create/Update when exact resource location not known. I.e. determined by server.
+    PUT,        //Create/Update when exact resource location known. I.e. determined by client user. Idempotent
+    DELETE,
+    HEAD,
+    NUM_METHODS
+};
+
 void handle_connection(int sfd);
 
 /* handle_connection: create a new thread to handle the incoming request */
@@ -85,22 +94,6 @@ void handle_connection(int sfd) {
     close(sfd);
 }
 
-enum methods {
-    GET = 0,
-    POST,       //Create/Update when exact resource location not known. I.e. determined by server.
-    PUT,        //Create/Update when exact resource location known. I.e. determined by client user. Idempotent
-    DELETE,
-    NUM_METHODS
-};
-
-/* connection_handler:  opens a new thread to handle the incoming connection */
-void * (*connection_handler) (void *);
-
-typedef struct connection {
-    int sock;
-    struct sockaddr address;
-    int addr_len;
-} connection_t;
 
 int main(int argc, char **argv)
 {

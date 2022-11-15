@@ -36,7 +36,8 @@ enum methods {
 void handle_connection(int sfd);
 
 /* handle_connection: create a new thread to handle the incoming request */
-void handle_connection(int sfd) {
+void handle_connection(int sfd) 
+{
     char request[2048];
     read(sfd, request, 2048);
     /* Get the request method */

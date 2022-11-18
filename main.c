@@ -19,6 +19,7 @@
 #define ADDRESS struct sockaddr /* convenience */
 #define CONNECTION_QUEUE_LIMIT 5
 #define MAX_METHOD_LENGTH 6 /* DELETE + '\0' */
+/* Client address variables: IPv4 max 16 byte string representation "255.255.255.255\0", IPv6 46 byte string representation (IPv6 is 39 byte max but with IPv4 tunneling can go up to 45 and then 1 byte for null terminator) "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn\0" (just IPv6), "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:255.255.255.255\0" with IPv4 tunneling */
 #define MAX_CLIENT_ADDRESS_LENGTH 46
 #define HTTP_HEADER_LENGTH 22
 #define RESOURCE_BUFFER_LENGTH 1024
@@ -133,7 +134,6 @@ int main(int argc, char **argv)
     while(1) {
         pthread_t thread;
         int client_socket;
-        /* Client address variables: IPv4 max 16 byte string representation "255.255.255.255\0", IPv6 46 byte string representation (IPv6 is 39 byte max but with IPv4 tunneling can go up to 45 and then 1 byte for null terminator) "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn\0" (just IPv6), "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:255.255.255.255\0" with IPv4 tunneling */
         char client_address_string[MAX_CLIENT_ADDRESS_LENGTH];
         socklen_t client_addr_string_len = sizeof(client_address_string);
         struct sockaddr_in client_address;

@@ -67,8 +67,7 @@ void *handle_connection(void *sfd)
     char file_path[100] = "./www";
     strcat(file_path, resource);
 
-    /* */
-    /* Associate stream with file name */
+    /* Open the file named as resource */
     FILE * data = fopen(file_path, "r");
     if(!data) {
         data = fopen("./www/error.html", "r");

@@ -25,7 +25,7 @@
 #define RESOURCE_BUFFER_LENGTH 1024
 #define RESPONSE_BUFFER_LENGTH 2048
 
-/* Initializer mutex */
+/* Initialize mutex */
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
 
 enum methods {
@@ -42,7 +42,7 @@ void *handle_connection(void *sfd);
 /* handle_connection: create a new thread to handle the incoming request */
 void *handle_connection(void *sfd) 
 {
-    /* Acquire the mutex lock */
+    /* Acquire the mutex */
     pthread_mutex_lock(&lock);
 
     char request[2048];
@@ -100,7 +100,7 @@ void *handle_connection(void *sfd)
     /* Close client socket */
     close(*((int*)sfd));
 
-    /* Release the mutex lock */
+    /* Release the mutex */
     pthread_mutex_unlock(&lock);
     
     return NULL;

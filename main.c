@@ -88,7 +88,6 @@ void *handle_connection(void *sfd)
             /* Send the response back to the client */
             send(*((int*)sfd), response, sizeof(response), 0);
 
-            /* DEALLOCATE HEAP MEMORY */
             /* deallocate response buffer */
             free(response_body);
 

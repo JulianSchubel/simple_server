@@ -24,27 +24,16 @@
 #define HTTP_HEADER_LENGTH 22
 #define RESOURCE_BUFFER_LENGTH 1024
 #define RESPONSE_BUFFER_LENGTH 2048
+#define METHOD_TABLE_LEN 4
 
 /* Initialize mutex */
 pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-
-enum methods {
-    GET = 0,
-    POST,       //Create/Update when exact resource location not known. I.e. determined by server.
-    PUT,        //Create/Update when exact resource location known. I.e. determined by client user. Idempotent
-    DELETE,
-    HEAD,
-    NUM_METHODS
-};
 
 void *handle_connection(void *sfd);
 
 /* handle_connection: create a new thread to handle the incoming request */
 void *handle_connection(void *sfd) 
 {
-    /* Acquire the mutex */
-    pthread_mutex_lock(&lock);
-
     char request[2048];
     read(*((int*)sfd), request, 2048);
     /* Get the request method */
@@ -60,49 +49,66 @@ void *handle_connection(void *sfd)
     printf("Resource: %s\n", resource);
     printf("Request: %s\n", request);    
     
-    if(!strcmp(resource, "/")) {
-        strcpy(resource, "/index.html");
+    int method = lookup_method(request_method, method_table, METHOD_TABLE_LEN);
+
+    switch (method)
+    {
+        case GET:
+            /* Acquire the mutex */
+            pthread_mutex_lock(&lock);
+
+            if(!strcmp(resource, "/")) {
+                strcpy(resource, "/index.html");
+            }
+
+            char file_path[100] = "./www";
+            strcat(file_path, resource);
+
+            /* Open the file named as resource */
+            FILE * data = fopen(file_path, "r");
+            if(!data) {
+                data = fopen("./www/error.html", "r");
+            }
+
+            /* get the length of the file (file_io_utilities) */
+            int data_length = get_flen(data);
+            /* Allocate sufficient memory */
+            char * response_body = malloc(sizeof(char)*data_length+1);
+            /* Copy the response data to a buffer (file_io_utilities) */
+            get_fdata(response_body, data, data_length);
+            /* close the response data file */
+            fclose(data);
+
+            /* HTTP header */ 
+            char response[RESPONSE_BUFFER_LENGTH] = "HTTP/1.1 200 OK\r\n\n";
+
+            /* Need to concat our header and the response body into one string */
+            strncat(response, response_body, (size_t)data_length);
+
+            /* Send the response back to the client */
+            send(*((int*)sfd), response, sizeof(response), 0);
+
+            /* DEALLOCATE HEAP MEMORY */
+            /* deallocate response buffer */
+            free(response_body);
+
+            /* Release the mutex */
+            pthread_mutex_unlock(&lock);
+            break;
+        case POST:
+            break;
+        case PUT:
+            break;
+        case DELETE:
+            break;
+        default:
+            break;
     }
-
-    char file_path[100] = "./www";
-    strcat(file_path, resource);
-
-    /* Open the file named as resource */
-    FILE * data = fopen(file_path, "r");
-    if(!data) {
-        data = fopen("./www/error.html", "r");
-    }
-
-    /* get the length of the file (file_io_utilities) */
-    int data_length = get_flen(data);
-    /* Allocate sufficient memory */
-    char * response_body = malloc(sizeof(char)*data_length+1);
-    /* Copy the response data to a buffer (file_io_utilities) */
-    get_fdata(response_body, data, data_length);
-    /* close the response data file */
-    fclose(data);
-
-    /* HTTP header */ 
-    char response[RESPONSE_BUFFER_LENGTH] = "HTTP/1.1 200 OK\r\n\n";
-
-    /* Need to concat our header and the response body into one string */
-    strncat(response, response_body, (size_t)data_length);
-
-    /* Send the response back to the client */
-    send(*((int*)sfd), response, sizeof(response), 0);
-
-    /* DEALLOCATE HEAP MEMORY */
-    /* deallocate response buffer */
-    free(response_body);
     /* deallocate request method buffer */
     free(request_method);
 
     /* Close client socket */
     close(*((int*)sfd));
-
-    /* Release the mutex */
-    pthread_mutex_unlock(&lock);
-    
     return NULL;
 }
 
@@ -138,16 +144,15 @@ int main(int argc, char **argv)
         struct sockaddr_in client_address;
         socklen_t client_addr_len = sizeof(client_address);
     
-        //Accept connection on the client socket.
-        //If not storing address (server_socket, NULL, NULL);
+        /* Accept connection on the client socket. */
+        /* If not storing address (server_socket, NULL, NULL); */
         client_socket = accept(sfd, (struct sockaddr *)&client_address, &client_addr_len);
 
-        //Convert client address from binary to text
+        /* Convert client address from binary to text */
         inet_ntop(client_address.sin_family, get_in_addr_type((struct sockaddr*)&client_address), client_address_string, client_addr_string_len);
         printf("Received connection from: %s\n", client_address_string);
         /* Open new thread to handle client connetion: client socket closed in handle_connection */
         pthread_create(&thread, NULL, handle_connection, &client_socket);
-        //handle_connection(client_socket);
     }
     close(sfd);
 }

@@ -18,7 +18,7 @@
 /* SYMBOLIC CONSTANTS */
 #define ADDRESS struct sockaddr /* convenience */
 #define CONNECTION_QUEUE_LIMIT 5
-#define MAX_METHOD_LENGTH 6 /* DELETE + '\0' */
+#define MAX_METHOD_LENGTH 7 /* DELETE + '\0' */
 /* Client address variables: IPv4 max 16 byte string representation "255.255.255.255\0", IPv6 46 byte string representation (IPv6 is 39 byte max but with IPv4 tunneling can go up to 45 and then 1 byte for null terminator) "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn\0" (just IPv6), "nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:nnnn:255.255.255.255\0" with IPv4 tunneling */
 #define MAX_CLIENT_ADDRESS_LENGTH 46
 #define HTTP_HEADER_LENGTH 22
@@ -37,8 +37,9 @@ void *handle_connection(void *sfd)
     char request[2048];
     read(*((int*)sfd), request, 2048);
     /* Get the request method */
-    /* 6 is max method length + '\0'. I.e. "DELETE\0" */
-    char * request_method = (char *)malloc(sizeof(char)*MAX_METHOD_LENGTH);
+    /* 6 is max method string length + '\0'. I.e. "DELETE\0", so 7 chars required */
+    /* Accepting wasted space to avoid addressing the heap */
+    char request_method[MAX_METHOD_LENGTH];
     char resource[RESPONSE_BUFFER_LENGTH];
     /* Parse the request method (http_utilities) */
     get_method(request, request_method, MAX_METHOD_LENGTH);
@@ -55,7 +56,8 @@ void *handle_connection(void *sfd)
     {
         case GET:
             /* Acquire the mutex */
-            pthread_mutex_lock(&lock);
+            /* Only reading from an object that is treated as immutable so mutex is not required */
+            //pthread_mutex_lock(&lock);
 
             if(!strcmp(resource, "/")) {
                 strcpy(resource, "/index.html");
@@ -92,7 +94,7 @@ void *handle_connection(void *sfd)
             free(response_body);
 
             /* Release the mutex */
-            pthread_mutex_unlock(&lock);
+            //pthread_mutex_unlock(&lock);
             break;
         case POST:
             break;
@@ -103,9 +105,6 @@ void *handle_connection(void *sfd)
         default:
             break;
     }
-    /* deallocate request method buffer */
-    free(request_method);
-
     /* Close client socket */
     close(*((int*)sfd));
     return NULL;

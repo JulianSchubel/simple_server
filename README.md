@@ -1,1 +1,1 @@
-# Simple multithreaded server
+# Simple multithreaded http server
